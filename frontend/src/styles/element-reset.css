@@ -1,0 +1,37 @@
+/* src/styles/element-reset.css */
+:root {
+  /* 主题色变量覆盖 */
+  --el-color-primary: #27ba9b !important;
+  --el-color-primary-light-3: #68cdbb !important;
+  --el-color-primary-light-5: #a4e2d6 !important;
+  --el-color-primary-light-7: #d1f0ea !important;
+  --el-color-primary-light-9: #ecf8f6 !important;
+  --el-color-primary-dark-2: #1e957c !important;
+}
+
+/* 日期选择器覆盖样式 */
+.el-picker-panel .el-date-table td.current:not(.disabled) span {
+  background-color: #27ba9b !important;
+  color: white !important;
+}
+
+.el-picker-panel .el-date-table td.today span {
+  color: #27ba9b !important;
+}
+
+.el-date-table td.in-range div {
+  background-color: rgba(39, 186, 155, 0.1) !important;
+}
+
+.el-date-table td.start-date div, 
+.el-date-table td.end-date div {
+  background-color: #27ba9b !important;
+  color: white !important;
+}
+
+.el-button--primary {
+  --el-button-bg-color: #27ba9b !important;
+  --el-button-border-color: #27ba9b !important;
+  --el-button-hover-bg-color: #25a58a !important;
+  --el-button-hover-border-color: #25a58a !important;
+}

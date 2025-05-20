@@ -1,0 +1,7 @@
+-- 创建业务数据库
+CREATE DATABASE IF NOT EXISTS demo DEFAULT CHARACTER SET utf8mb4;
+
+-- 创建业务账号并授权
+CREATE USER IF NOT EXISTS 'demo_user'@'%' IDENTIFIED BY 'feng0831';
+GRANT ALL PRIVILEGES ON demo.* TO 'demo_user'@'%';
+FLUSH PRIVILEGES;

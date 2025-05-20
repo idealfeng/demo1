@@ -1,0 +1,292 @@
+// element-overrides.scss
+// 使用 CSS Variables 提升可维护性
+// 在 element-overrides.scss 文件顶部添加
+@use "@/styles/common.scss" as common;
+.el-checkbox__label {
+    color: common.$xtxColor !important; }
+:root {
+    // 将这个颜色改为你的主题色
+    --primary-color: #27ba9b !important;
+    --primary-gradient: linear-gradient(90deg, var(--primary-color), #20a88a) !important;
+    --dialog-header-height: 52px !important;
+}
+
+// 使用深度选择器确保样式穿透 (Vue 3 使用 :deep())
+body {
+
+    // 租赁对话框定位修复
+    .el-overlay-dialog {
+        display: flex !important;
+        justify-content: center !important;
+
+        .rental-dialog {
+            position: relative !important;
+            top: 120px !important;
+            margin: 0 !important;
+
+            .el-dialog__body {
+                max-height: 60vh !important;
+                overflow-y: auto !important;
+            }
+        }
+    }
+
+    .el-dialog.rental-dialog {
+        border-radius: 8px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+
+        .el-dialog__header {
+            position: relative !important;
+            background: var(--primary-gradient) !important;
+            padding: 15px 20px !important;
+            margin-right: 0 !important;
+
+            &::after {
+                content: '' !important;
+                position: absolute !important;
+                bottom: 0 !important;
+                left: 20px !important;
+                right: 20px !important;
+                height: 1px !important;
+                background: rgba(255, 255, 255, 0.15) !important;
+            }
+
+            .el-dialog__title {
+                color: white !important;
+                font: 500 18px/1.5 'Microsoft YaHei', sans-serif !important;
+            }
+
+            .el-dialog__headerbtn {
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+
+                &:hover .el-dialog__close {
+                    color: rgba(255, 255, 255, 0.8) !important;
+                }
+            }
+        }
+
+        .el-dialog__footer {
+            padding: 16px 20px !important;
+            background: #f8f9fa !important;
+            border-top: 1px solid #e5e7eb !important;
+        }
+    }
+
+    .el-date-table {
+        td {
+            &.in-range:not(.start-date):not(.end-date) div {
+                background: rgba(40, 199, 111, 0.1) !important;
+
+                &::before {
+                    content: '' !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    bottom: 0 !important;
+                    left: -2px !important;
+                    right: -2px !important;
+                    background: rgba(40, 199, 111, 0.05) !important;
+                }
+            }
+
+            &.start-date,
+            &.end-date {
+                div {
+                    background: var(--primary-color) !important;
+                    color: white !important;
+                    font-weight: bold !important;
+                    border-radius: 4px !important;
+                }
+            }
+        }
+
+        td.today:not(.start-date):not(.end-date) span {
+            color: var(--primary-color) !important;
+
+            &::after {
+                content: '' !important;
+                position: absolute !important;
+                bottom: 2px !important;
+                left: 50% !important;
+                width: 4px !important;
+                height: 4px !important;
+                background: currentColor !important;
+                border-radius: 50% !important;
+                transform: translateX(-50%) !important;
+            }
+        }
+    }
+        // --- START: MessageBox Danger Button Override ---
+        // Place this block within your element-overrides.scss file
+        // Use a very specific selector targeting the button within the MessageBox structure
+    
+        .el-overlay {
+    
+            // Target the overlay container
+            .el-message-box {
+    
+                // Target the message box itself
+                .el-message-box__btns {
+    
+                    // Target the button container
+                    // Target the specific button with our custom class AND the default primary class it might have
+                    button.el-button.my-messagebox-danger-button,
+                    button.el-button--primary.my-messagebox-danger-button {
+                        // Cover both cases
+                        background-color: #f56c6c !important; // Element Plus Danger Red
+                        border-color: #f56c6c !important;
+                        color: #ffffff !important; // White text
+    
+                        &:hover {
+                            background-color: #f89898 !important; // Lighter red on hover
+                            border-color: #f89898 !important;
+                        }
+    
+                        &:focus {
+                            background-color: #f56c6c !important;
+                            border-color: #f56c6c !important;
+                            // Optional: Add a distinct focus outline if needed
+                            // outline: 2px solid #fab6b6 !important;
+                            // outline-offset: 1px !important;
+                        }
+    
+                        &:active {
+                            background-color: #d95f5f !important; // Darker red on click/active
+                            border-color: #d95f5f !important;
+                            outline: none !important; // Remove default outline on active
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- START: Checkbox Label Color Fix ---
+        // Add this to your element-overrides.scss
+
+        .el-checkbox__label {
+            // Use Element Plus's default text color variable for consistency
+            color: var(--el-text-color-regular) !important;
+
+            // Alternatively, specify a fixed color if the variable doesn't work
+            // color: #606266 !important; // Element Plus default text color hex code
+        }
+
+        // Optional: Ensure the checked state label color is also correct (if needed)
+        // By default, checked labels often use the primary color. If you want to keep it default text color:
+        .el-checkbox__input.is-checked+.el-checkbox__label {
+            // Keep this commented out unless you specifically DON'T want the label to change color when checked
+            // color: var(--el-text-color-regular) !important;
+        }
+
+        // --- END: Checkbox Label Color Fix ---
+
+        // Make sure the rest of your overrides are above or below this block.
+        // --- START: Popconfirm Danger Button Override ---
+        // Add this to your element-overrides.scss
+
+        // Target the Popconfirm's specific confirm button
+        // Element Plus uses different structures sometimes, try this specific selector
+        .el-popconfirm__main+.el-popconfirm__action .el-button--primary {
+            background-color: #f56c6c !important; // Danger Red
+            border-color: #f56c6c !important;
+            color: #ffffff !important; // White text
+
+            &:hover {
+                background-color: #f89898 !important; // Lighter red on hover
+                border-color: #f89898 !important;
+            }
+
+            &:active {
+                background-color: #d95f5f !important; // Darker red on click/active
+                border-color: #d95f5f !important;
+            }
+        }
+
+        // --- END: Popconfirm Danger Button Override ---
+        // --- START: Login Checkbox Green Override ---
+
+        // Target the checkbox in the login form specifically if possible,
+        // otherwise apply globally (use with caution if you have other checkboxes)
+        // Assuming the checkbox is within a form with class 'account-box' or similar:
+        .login-section .account-box .el-checkbox {
+
+            // 1. Change the label text color to green
+            .el-checkbox__label {
+                color: common.$xtxColor !important;
+            }
+
+            // 2. Change the border color of the box when NOT checked (optional, for consistency)
+            .el-checkbox__inner {
+                border-color: darken(common.$xtxColor, 10%) !important; // Slightly darker green border
+            }
+
+            // 3. Change the box background and border when checked
+            .el-checkbox__input.is-checked .el-checkbox__inner {
+                background-color: common.$xtxColor !important;
+                border-color: common.$xtxColor !important;
+            }
+
+            // 4. Change the checkmark color (usually white is fine, but can change if needed)
+            .el-checkbox__input.is-checked .el-checkbox__inner::after {
+                // border-color: white !important; // Keep default white checkmark usually
+            }
+
+            // 5. Change the border color on hover (when not checked)
+            .el-checkbox__input:not(.is-checked):hover .el-checkbox__inner {
+                border-color: common.$xtxColor !important;
+            }
+        }
+
+        // --- END: Login Checkbox Green Override ---
+    .el-date-table {
+        td {
+
+            // 今天
+            &.today span {
+                color: common.$xtxColor !important;
+            }
+
+            // 范围内日期
+            &.in-range div {
+                background-color: rgba(39, 186, 155, 0.1) !important;
+                color: #606266 !important;
+
+                &::before {
+                    background-color: rgba(39, 186, 155, 0.1) !important;
+                }
+            }
+
+            // 开始日期和结束日期
+            &.start-date div,
+            &.end-date div {
+                background-color: common.$xtxColor !important;
+                color: #fff !important;
+            }
+
+            // 当前日期
+            &.current:not(.disabled) span {
+                color: common.$xtxColor !important;
+                font-weight: bold;
+            }
+
+            // 可用日期悬停效果
+            &:hover:not(.disabled):not(.start-date):not(.end-date) div {
+                color: common.$xtxColor !important;
+            }
+        }
+    }
+
+    // 日期选择器控件颜色
+    .el-date-picker__header-button:hover {
+        color: common.$xtxColor !important;
+    }
+
+    .el-date-picker__time-header,
+    .el-picker-panel__icon-btn:hover {
+        color: common.$xtxColor !important;
+    }
+}
+
+
+
+    

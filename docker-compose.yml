@@ -1,0 +1,36 @@
+services:
+  db:
+    image: mysql:8.3
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    healthcheck:                   # ← 确保这一段在 db 里
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      PORT: 5200            # 容器里还是 5200
+      DB_HOST: db
+      DB_USER: demo_user
+      DB_PASS: ${DB_PASS}
+      DB_NAME: demo
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_PORT:-15200}:5200"   # ←— 宿主15200→容器5200
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"     # ←— 宿主5173→容器80
+
+volumes:
+  mysql-data:

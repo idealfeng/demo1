@@ -1,0 +1,20 @@
+{
+  "users": {
+    "alice1": {
+      "password": "12345678",
+      "token": "mTuy8zfvCDprWmFQGwE4c"
+    },
+    "alice2": {
+      "password": "123",
+      "token": "0z7Kf5NZSYeft_kevhQdx"
+    },
+    "alice3": {
+      "password": "123456",
+      "token": "tWv8JjT1813JBLEbkUkGv"
+    },
+    "alice": {
+      "password": "12345678",
+      "token": "WuFnH8jm0WYRRnv0y30I1"
+    }
+  }
+}
