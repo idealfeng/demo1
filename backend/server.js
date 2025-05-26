@@ -3,7 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import mysql from 'mysql2/promise'
 import { nanoid } from 'nanoid'
-import bcrypt from 'bcryptjs'; // 导入 bcryptjs 库
+import bcrypt from 'bcryptjs';
 
 const app = express()
 app.use(cors({
@@ -13,6 +13,14 @@ app.use(cors({
 }))
 app.use(express.json())
 
+app.get('/', (req, res) => {
+    res.send('后端服务器运行正常!')
+})
+app.get('/api/ping', (req, res) => {
+    console.log('Accessed /api/ping'); // Add a log here for debugging
+    res.json({ msg: 'pong' });
+});
+
 // 创建MySQL连接池
 const pool = mysql.createPool({
     host: process.env.DB_HOST,      // ←—
@@ -21,7 +29,8 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,  // ←—
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    charset: 'utf8mb4' // <--- 添加这一行！！
 })
 
 // 预设的默认头像列表 (如果用户没有设置头像，后端会随机选一个)--------------------------
@@ -47,20 +56,67 @@ const defaultAvatars = [
     '/avatar/银狼.jpg',
     '/avatar/知更鸟.jpg',
   ];
+// 我们之前定义的 reinitializeOrderStatusColumn 函数
+async function reinitializeOrderStatusColumn() {
+    let connection; // 将 connection 移到 try 外部，以便 finally 中可以访问
+    try {
+        connection = await pool.getConnection(); // 获取连接
+        console.log(">>> Attempting to reinitialize 'status' column via Node.js...");
 
+        await connection.query("SET NAMES 'utf8mb4';");
+        console.log(">>> Executed SET NAMES 'utf8mb4';");
+
+        try {
+            await connection.query("ALTER TABLE rental_orders DROP COLUMN status;");
+            console.log(">>> 'status' column dropped successfully or did not exist.");
+        } catch (dropError) {
+            console.warn(">>> INFO: Error dropping 'status' column (might not exist, or other issue):", dropError.message);
+            if (dropError.code !== 'ER_CANT_DROP_FIELD_OR_KEY' && dropError.errno !== 1091 /*MySQL specific for cant drop*/) {
+                // 如果不是 "列不存在" 相关的错误，则可能是其他问题，选择抛出让外层处理或记录
+                console.error(">>> Significant error during DROP COLUMN, rethrowing:", dropError);
+                throw dropError;
+            }
+        }
+
+        const addColumnSQL = `
+            ALTER TABLE rental_orders 
+            ADD COLUMN status ENUM('待发货','租用中','待归还','已归还','已取消') 
+            CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '待发货';
+        `;
+        await connection.query(addColumnSQL);
+        console.log(">>> 'status' column re-added successfully with ENUM definition via Node.js.");
+        console.log(">>> SUCCESS! Please REMOVE or COMMENT OUT the call to reinitializeOrderStatusColumn() after this successful run!");
+
+    } catch (error) {
+        console.error(">>> CRITICAL ERROR in reinitializeOrderStatusColumn:", error);
+    } finally {
+        if (connection) {
+            console.log(">>> Releasing connection in reinitializeOrderStatusColumn.");
+            connection.release();
+        }
+    }
+}
 // 测试数据库连接
 async function testConnection() {
+    let connection;
     try {
-        const connection = await pool.getConnection()
-        console.log('数据库连接成功')
-        connection.release()
+        connection = await pool.getConnection();
+        console.log('数据库连接成功 (from testConnection)');
+        return true;
     } catch (error) {
-        console.error('数据库连接失败:', error)
+        console.error('数据库连接失败 (from testConnection):', error);
+        return false;
+    } finally {
+        if (connection) {
+            console.log(">>> Releasing connection in testConnection.");
+            connection.release();
+        }
     }
 }
 
 // 创建收藏表（如果不存在）
 async function initFavoritesTable() {
+    let connection; // <--- 修正：在这里声明 
     try {
         const connection = await pool.getConnection()
         await connection.query(`
@@ -76,12 +132,35 @@ async function initFavoritesTable() {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         `)
         connection.release()
-        console.log('收藏表初始化成功')
+        console.log('>>> 收藏表初始化成功 (from initFavoritesTable)'); // 修改日志前缀方便识别
     } catch (error) {
-        console.error('收藏表初始化失败:', error)
+        console.error('>>> 收藏表初始化失败 (from initFavoritesTable):', error);
+    } finally {
+        if (connection) { // <--- 现在 connection 是已声明的了
+            console.log(">>> Releasing connection in initFavoritesTable.");
+            connection.release();
+        }
     }
 }
+// 启动时执行的初始化序列
+async function initializeApp() {
+    console.log(">>> Starting application initialization...");
+    const dbConnected = await testConnection();
 
+    if (dbConnected) {
+        console.log(">>> Database connection confirmed by testConnection. Proceeding with initializations.");
+        await initFavoritesTable();
+        console.log(">>> Attempting to call reinitializeOrderStatusColumn...");
+        // await reinitializeOrderStatusColumn();
+        console.log(">>> Finished calling reinitializeOrderStatusColumn (check logs for success/failure).");
+    } else {
+        console.error(">>> CRITICAL: Database connection failed in testConnection. Cannot proceed with app initialization.");
+        process.exit(1);
+    }
+    console.log(">>> Application initialization sequence finished.");
+}
+
+initializeApp();
 // 启动时测试连接和初始化表
 testConnection()
 initFavoritesTable()
@@ -659,11 +738,23 @@ app.post('/rentals', async (req, res) => {
     }
 
     try {
-        const orderId = nanoid(); // 生成唯一的订单ID
+        const orderId = nanoid();
+        const statusValue = '待发货'; // 确保这是你实际使用的字符串
+
+        // 调试：打印 statusValue 的 Buffer 表示 (十六进制)
+        console.log('>>> DEBUG: statusValue string:', statusValue);
+        console.log('>>> DEBUG: statusValue buffer (hex):', Buffer.from(statusValue, 'utf8').toString('hex'));
+        // 新增：打印 statusValue 的长度
+        console.log('>>> DEBUG: statusValue string length:', statusValue.length);
+        // 新增：打印 statusValue 每个字符的Unicode码点
+        for (let i = 0; i < statusValue.length; i++) {
+            console.log(`>>> DEBUG: char[${i}] '${statusValue[i]}' unicode: ${statusValue.charCodeAt(i).toString(16)}`);
+        }
+
 
         await pool.execute(
             'INSERT INTO rental_orders (id, user_id, product_id, product_name, product_picture, rental_price, deposit, days, startDate, endDate, rentalFee, totalAmount, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [orderId, userId, productId, productName, productPicture, rentalPrice, deposit, days, startDate, endDate, rentalFee, totalAmount, '待发货'] // 默认状态为待发货
+            [orderId, userId, productId, productName, productPicture, rentalPrice, deposit, days, startDate, endDate, rentalFee, totalAmount, statusValue]
         );
 
         res.json({ code: 0, message: '租赁订单创建成功', data: { orderId } });
@@ -965,12 +1056,7 @@ app.delete('/comments/:commentId', async (req, res) => {
     }
 });
 
-
-
 // 根路径
-app.get('/', (req, res) => {
-    res.send('后端服务器运行正常!')
-})
 
 const PORT = process.env.PORT || 5200
-app.listen(PORT, () => console.log('Backend on :', PORT))
+app.listen(PORT, '0.0.0.0', () => console.log('Backend on :', PORT))

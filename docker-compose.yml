@@ -3,10 +3,15 @@ services:
     image: mysql:8.3
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: demo
+      MYSQL_USER: demo_user
+      MYSQL_PASSWORD: ${DB_PASS}
     ports:
-      - "${MYSQL_PORT}:3306"
-    healthcheck:                   # ← 确保这一段在 db 里
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      - "${MYSQL_PORT:-13306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -14,7 +19,7 @@ services:
   backend:
     build: ./backend
     environment:
-      PORT: 5200            # 容器里还是 5200
+      PORT: 5200
       DB_HOST: db
       DB_USER: demo_user
       DB_PASS: ${DB_PASS}
@@ -23,14 +28,17 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "${BACKEND_PORT:-15200}:5200"   # ←— 宿主15200→容器5200
+      - "${BACKEND_PORT:-15200}:5200"   # 宿主 15200 → 容器 5200
+    volumes: # <--- 添加这个 volumes 块
+    - ./backend:/app # 将本地的 ./backend 目录映射到容器内的 /app 目录
+                      # 确保容器内的工作目录是 /app (根据你的 Dockerfile, WORKDIR /app 是对的)
 
   frontend:
     build: ./frontend
     depends_on:
       - backend
     ports:
-      - "${FRONTEND_PORT:-5173}:80"     # ←— 宿主5173→容器80
+      - "${FRONTEND_PORT:-5173}:80"     # 宿主 5173 → 容器 80
 
 volumes:
   mysql-data:
