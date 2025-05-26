@@ -4,7 +4,7 @@
 FROM docker.m.daocloud.io/library/node:20-slim AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev            # 只装生产依赖
+RUN npm ci            # 只装生产依赖
 RUN echo ">>> DEBUG: Listing node_modules in deps stage after npm ci:" && ls -la node_modules && echo ">>> DEBUG: Checking for dotenv in deps stage:" && ls -la node_modules/dotenv || echo ">>> DEBUG: dotenv NOT found in deps stage"
 
 # ---------- 生产镜像 ----------
