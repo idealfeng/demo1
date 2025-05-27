@@ -1,6 +1,9 @@
 services:
   db:
     image: mysql:8.3
+    command: # 保留这个，或者用数组形式
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: demo
@@ -10,11 +13,14 @@ services:
       - "${MYSQL_PORT:-13306}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql # <--- 取消注释或添加回来！确保路径正确！
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 20
+      start_period: 30s
+
 
   backend:
     build: ./backend

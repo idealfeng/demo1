@@ -110,21 +110,38 @@ async function reinitializeOrderStatusColumn() {
     }
 }
 // 测试数据库连接
-async function testConnection() {
-    let connection;
-    try {
-        connection = await pool.getConnection();
-        console.log('数据库连接成功 (from testConnection)');
-        return true;
-    } catch (error) {
-        console.error('数据库连接失败 (from testConnection):', error);
-        return false;
-    } finally {
-        if (connection) {
-            console.log(">>> Releasing connection in testConnection.");
-            connection.release();
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function testConnection(retries = 5, delay = 5000) { // 默认重试5次，每次间隔5秒
+    for (let i = 0; i < retries; i++) {
+        let connection;
+        try {
+            console.log(`>>> Attempting database connection (Attempt ${i + 1}/${retries})...`);
+            connection = await pool.getConnection();
+            console.log('数据库连接成功 (from testConnection)');
+            if (connection) connection.release(); // 确保释放连接
+            return true;
+        } catch (error) {
+            console.error(`数据库连接失败 (Attempt ${i + 1}/${retries}):`, error.message); // 只打印关键错误信息
+            if (i < retries - 1) {
+                console.log(`>>> Retrying in ${delay / 1000} seconds...`);
+                await sleep(delay);
+            } else {
+                console.error('>>> All database connection attempts failed.');
+                // 依然可以在 initializeApp 中处理 process.exit(1)
+                return false;
+            }
+        } finally {
+            // 从 try/catch 中移出，以避免在成功时也执行
+            // if (connection) {
+            //     console.log(">>> Releasing connection in testConnection (finally block).");
+            //     connection.release();
+            // }
         }
     }
+    return false; // 应该不会执行到这里
 }
 
 // 创建收藏表（如果不存在）
@@ -158,16 +175,23 @@ async function initFavoritesTable() {
 // 启动时执行的初始化序列
 async function initializeApp() {
     console.log(">>> Starting application initialization...");
-    const dbConnected = await testConnection();
+    const dbConnected = await testConnection(); // 调用带重试的函数
 
     if (dbConnected) {
         console.log(">>> Database connection confirmed by testConnection. Proceeding with initializations.");
-        await initFavoritesTable();
+        await initFavoritesTable(); // 确保 initFavoritesTable 也有健壮的错误处理和连接释放
         console.log(">>> Attempting to call reinitializeOrderStatusColumn...");
-        // await reinitializeOrderStatusColumn();
+        // await reinitializeOrderStatusColumn(); // 你已经注释掉了这个
         console.log(">>> Finished calling reinitializeOrderStatusColumn (check logs for success/failure).");
+
+        // 启动 Express 服务器
+        const PORT = process.env.PORT || 5200;
+        app.listen(PORT, () => {
+            console.log(`Backend on : ${PORT}`); // 移到这里，确保数据库连接成功后再监听
+        });
+
     } else {
-        console.error(">>> CRITICAL: Database connection failed in testConnection. Cannot proceed with app initialization.");
+        console.error(">>> CRITICAL: Database connection failed after multiple retries. Cannot proceed with app initialization.");
         process.exit(1);
     }
     console.log(">>> Application initialization sequence finished.");
@@ -214,8 +238,14 @@ app.post('/login', async (req, res) => {
     if (!account || !password) {
         return res.status(400).json({ code: 1, message: '参数缺失' });
     }
-
+    let connectionForDbCheck; 
     try {
+        // 获取一个连接来检查当前数据库
+        connectionForDbCheck = await pool.getConnection();
+        const [currentDbResult] = await connectionForDbCheck.query('SELECT DATABASE() as current_database;');
+        console.log('>>> DEBUG: /login - Current database for connection:', currentDbResult[0]?.current_database); // 打印当前数据库
+        if (connectionForDbCheck) connectionForDbCheck.release(); // 释放连接
+
         // //危险----------------------
         // const [rows] = await pool.query(sql);
         // 查询用户，只根据用户名查找（不包括密码，安全起见）
