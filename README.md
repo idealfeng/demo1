@@ -144,3 +144,5 @@ docker compose restart backend
 # 更新代码后重建镜像
 docker compose build backend frontend
 docker compose up -d
+
+//最后一次版本和前一次均正常
