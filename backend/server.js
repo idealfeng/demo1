@@ -4,7 +4,20 @@ import cors from 'cors'
 import mysql from 'mysql2/promise'
 import { nanoid } from 'nanoid'
 import bcrypt from 'bcryptjs';
+// server.js
+import fs from 'fs'; // 需要导入 fs 模块
 
+try {
+    console.log('>>> DEBUG: Current working directory:', process.cwd());
+    console.log('>>> DEBUG: Contents of /app:', fs.readdirSync('/app').join(', '));
+    console.log('>>> DEBUG: Contents of /app/node_modules:', fs.readdirSync('/app/node_modules').join(', ').substring(0, 500) + '...'); // 只显示一部分
+    console.log('>>> DEBUG: Stat of /app/node_modules/dotenv:', JSON.stringify(fs.statSync('/app/node_modules/dotenv')));
+    console.log('>>> DEBUG: Contents of /app/node_modules/dotenv:', fs.readdirSync('/app/node_modules/dotenv').join(', '));
+} catch (e) {
+    console.error('>>> DEBUG: Error during pre-import debug:', e);
+}
+
+import 'dotenv/config'; // 你的原始导入
 const app = express()
 app.use(cors({
     origin: '*',  // 允许所有来源访问
