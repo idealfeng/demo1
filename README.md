@@ -91,7 +91,7 @@ Vite 已在 vite.config.js 把 /api 代理到 localhost:5200，前后端即可�
 
 二、全容器一把梭
 # 0. 克隆并进入项目
-git clone https://github.com/idealfeng/vue3_sicau.git
+git clone https://github.com/idealfeng/demo1.git
 cd vue3_sicau
 
 # 1. 初始化环境变量

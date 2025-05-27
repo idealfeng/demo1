@@ -37,7 +37,7 @@ services:
       - "${BACKEND_PORT:-15200}:5200"   # 宿主 15200 → 容器 5200
     volumes: # <--- 添加这个 volumes 块
     - ./backend:/app # 将本地的 ./backend 目录映射到容器内的 /app 目录
-                      # 确保容器内的工作目录是 /app (根据你的 Dockerfile, WORKDIR /app 是对的)
+    - /app/node_modules # 这是一个匿名卷，会保留镜像中 /app/node_modules 的内容  # 确保容器内的工作目录是 /app (根据你的 Dockerfile, WORKDIR /app 是对的)
 
   frontend:
     build: ./frontend
